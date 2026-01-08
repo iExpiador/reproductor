@@ -23,13 +23,21 @@
         
         /* Contenedor del reproductor */
         .reproductor {
-            width: 300px;
-            height: 100px;
+            width: 400px;
+            height: 60px;
             display: flex;
-            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+        
+        /* Contenedor del botón */
+        .contenedor-boton {
+            display: flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
+            width: 60px;
+            height: 100%;
         }
         
         /* Botón de reproducción */
@@ -41,6 +49,11 @@
             cursor: pointer;
             padding: 0;
             position: relative;
+            transition: transform 0.2s ease;
+        }
+        
+        .boton-play:hover {
+            transform: scale(1.05);
         }
         
         /* Flecha de reproducción blanca */
@@ -76,6 +89,16 @@
             background: white;
         }
         
+        /* Contenedor de la barra */
+        .contenedor-barra {
+            flex: 1;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding-left: 20px;
+        }
+        
         /* Línea de duración */
         .barra-progreso {
             width: 100%;
@@ -83,6 +106,7 @@
             background: rgba(255, 255, 255, 0.3);
             cursor: pointer;
             position: relative;
+            max-width: 300px;
         }
         
         .progreso {
@@ -93,12 +117,29 @@
             transition: width 0.1s linear;
         }
         
+        /* Punto en la barra de progreso */
+        .punto-progreso {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .barra-progreso:hover .punto-progreso {
+            opacity: 1;
+        }
+        
         /* Audio oculto */
         #audioPlayer {
             display: none;
         }
         
-        /* Para que sea visible en páginas con fondo blanco, añade sombra */
+        /* Para que sea visible en páginas con fondo blanco */
         .boton-play,
         .barra-progreso {
             filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
@@ -107,14 +148,19 @@
 </head>
 <body>
     <div class="reproductor">
-        <!-- Botón de reproducción -->
-        <button class="boton-play" id="playBtn">
-            <div class="play-icon" id="playIcon"></div>
-        </button>
+        <!-- Botón de reproducción (izquierda) -->
+        <div class="contenedor-boton">
+            <button class="boton-play" id="playBtn">
+                <div class="play-icon" id="playIcon"></div>
+            </button>
+        </div>
         
-        <!-- Línea de duración -->
-        <div class="barra-progreso" id="progressBar">
-            <div class="progreso" id="progress"></div>
+        <!-- Línea de duración (derecha) -->
+        <div class="contenedor-barra">
+            <div class="barra-progreso" id="progressBar">
+                <div class="progreso" id="progress"></div>
+                <div class="punto-progreso" id="progressDot"></div>
+            </div>
         </div>
         
         <!-- Reproductor de audio oculto -->
@@ -128,11 +174,12 @@
         const playIcon = document.getElementById('playIcon');
         const progressBar = document.getElementById('progressBar');
         const progress = document.getElementById('progress');
+        const progressDot = document.getElementById('progressDot');
         
         // Estado del reproductor
         let isPlaying = false;
         
-        // Cargar canción (aquí puedes cambiar la URL)
+        // URLs de las canciones (cambia estas por tus propias canciones)
         const canciones = [
             'https://assets.codepen.io/4358584/Anitek_-_Komorebi.mp3',
             'https://assets.codepen.io/4358584/Asher_Fulero_-_Game_Show.mp3'
@@ -141,10 +188,20 @@
         // Cargar la primera canción por defecto
         audioPlayer.src = canciones[0];
         
+        // Función para actualizar la posición del punto en la barra
+        function actualizarPuntoProgreso() {
+            if (audioPlayer.duration) {
+                const porcentaje = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+                progressDot.style.left = `${porcentaje}%`;
+            }
+        }
+        
         // Controlar reproducción/pausa
         playBtn.addEventListener('click', () => {
             if (!isPlaying) {
-                audioPlayer.play();
+                audioPlayer.play().catch(e => {
+                    console.log('Error al reproducir:', e);
+                });
             } else {
                 audioPlayer.pause();
             }
@@ -161,11 +218,12 @@
             playIcon.className = 'play-icon';
         });
         
-        // Actualizar barra de progreso
+        // Actualizar barra de progreso y punto
         audioPlayer.addEventListener('timeupdate', () => {
             if (audioPlayer.duration) {
                 const porcentaje = (audioPlayer.currentTime / audioPlayer.duration) * 100;
                 progress.style.width = `${porcentaje}%`;
+                actualizarPuntoProgreso();
             }
         });
         
@@ -174,27 +232,47 @@
             const rect = progressBar.getBoundingClientRect();
             const clickX = e.clientX - rect.left;
             const width = rect.width;
-            const porcentaje = (clickX / width);
+            const porcentaje = Math.min(Math.max((clickX / width) * 100, 0), 100);
             
             if (audioPlayer.duration) {
-                audioPlayer.currentTime = audioPlayer.duration * porcentaje;
+                audioPlayer.currentTime = (audioPlayer.duration * porcentaje) / 100;
             }
+        });
+        
+        // Mostrar/ocultar punto al pasar el mouse
+        progressBar.addEventListener('mouseenter', () => {
+            progressDot.style.opacity = '1';
+        });
+        
+        progressBar.addEventListener('mouseleave', () => {
+            progressDot.style.opacity = '0';
         });
         
         // Cuando se cargan los metadatos
         audioPlayer.addEventListener('loadedmetadata', () => {
-            console.log('Duración de la canción:', audioPlayer.duration);
+            console.log('Canción cargada. Duración:', audioPlayer.duration);
+            actualizarPuntoProgreso();
+        });
+        
+        // Cuando la canción termina
+        audioPlayer.addEventListener('ended', () => {
+            isPlaying = false;
+            playIcon.className = 'play-icon';
+            progress.style.width = '100%';
         });
         
         // Manejar errores
         audioPlayer.addEventListener('error', (e) => {
             console.error('Error cargando el audio:', e);
             // Si la primera canción falla, intenta con la segunda
-            if (audioPlayer.src === canciones[0]) {
+            if (audioPlayer.src === canciones[0] && canciones.length > 1) {
                 audioPlayer.src = canciones[1];
                 audioPlayer.load();
             }
         });
+        
+        // Precargar la canción
+        audioPlayer.load();
     </script>
 </body>
 </html>
