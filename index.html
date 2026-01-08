@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Reproductor Música YouTube</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Plyr CSS -->
+  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
+
+  <style>
+    body {
+      background: #111;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    .player-container {
+      width: 320px;
+    }
+
+    /* Oculta video, deja solo audio */
+    .plyr__video-wrapper {
+      display: none;
+    }
+
+    /* Personalización de controles */
+    .plyr--audio .plyr__controls {
+      background: #222;
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    .plyr__control {
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+<div class="player-container">
+  <div
+    class="plyr__video-embed"
+    id="player"
+    data-plyr-provider="youtube"
+    data-plyr-embed-id="dQw4w9WgXcQ">
+  </div>
+</div>
+
+<!-- Plyr JS -->
+<script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const player = new Plyr('#player', {
+      autoplay: false,
+      controls: [
+        'play',
+        'progress',
+        'current-time',
+        'mute',
+        'volume'
+      ]
+    });
+  });
+</script>
+
+</body>
+</html>
