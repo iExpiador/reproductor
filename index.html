@@ -1,73 +1,364 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Reproductor Música YouTube</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Plyr CSS -->
-  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
-
-  <style>
-    body {
-      background: #111;
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      font-family: Arial, sans-serif;
-    }
-
-    .player-container {
-      width: 320px;
-    }
-
-    /* Oculta video, deja solo audio */
-    .plyr__video-wrapper {
-      display: none;
-    }
-
-    /* Personalización de controles */
-    .plyr--audio .plyr__controls {
-      background: #222;
-      border-radius: 10px;
-      padding: 10px;
-    }
-
-    .plyr__control {
-      color: #fff;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reproductor Minimalista YouTube</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background-color: #1a1a1a; /* Solo para visualización */
+        }
+        
+        .player-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+        }
+        
+        .player {
+            background: transparent;
+            border-radius: 10px;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .play-button {
+            width: 60px;
+            height: 60px;
+            background: transparent;
+            border: 2px solid white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            margin: 0 auto 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .play-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .play-icon {
+            width: 0;
+            height: 0;
+            border-top: 12px solid transparent;
+            border-bottom: 12px solid transparent;
+            border-left: 20px solid white;
+            margin-left: 4px;
+        }
+        
+        .pause-icon {
+            width: 20px;
+            height: 24px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .pause-icon::before,
+        .pause-icon::after {
+            content: '';
+            width: 6px;
+            height: 100%;
+            background: white;
+        }
+        
+        .progress-container {
+            position: relative;
+            width: 100%;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            margin: 20px 0;
+        }
+        
+        .progress-bar {
+            position: absolute;
+            height: 100%;
+            background: white;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+        
+        .time-display {
+            color: white;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 10px;
+            opacity: 0.8;
+            letter-spacing: 1px;
+        }
+        
+        .input-container {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        #youtubeUrl {
+            flex: 1;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            color: white;
+            font-size: 14px;
+        }
+        
+        #loadButton {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        #loadButton:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Ocultar el iframe de YouTube */
+        #youtubePlayer {
+            position: absolute;
+            width: 0;
+            height: 0;
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
 </head>
 <body>
+    <div class="player-container">
+        <div class="player">
+            <!-- Botón de reproducción -->
+            <div class="play-button" id="playButton">
+                <div class="play-icon" id="playIcon"></div>
+            </div>
+            
+            <!-- Barra de progreso -->
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            
+            <!-- Tiempo -->
+            <div class="time-display">
+                <span id="currentTime">0:00</span> / <span id="duration">0:00</span>
+            </div>
+            
+            <!-- Input para URL de YouTube -->
+            <div class="input-container">
+                <input type="text" id="youtubeUrl" placeholder="Pega la URL de YouTube aquí">
+                <button id="loadButton">Cargar</button>
+            </div>
+            
+            <!-- Player de YouTube (oculto) -->
+            <div id="youtubePlayer"></div>
+        </div>
+    </div>
 
-<div class="player-container">
-  <div
-    class="plyr__video-embed"
-    id="player"
-    data-plyr-provider="youtube"
-    data-plyr-embed-id="dQw4w9WgXcQ">
-  </div>
-</div>
-
-<!-- Plyr JS -->
-<script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const player = new Plyr('#player', {
-      autoplay: false,
-      controls: [
-        'play',
-        'progress',
-        'current-time',
-        'mute',
-        'volume'
-      ]
-    });
-  });
-</script>
-
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        // Variables globales
+        let player;
+        let isPlaying = false;
+        let currentTime = 0;
+        let duration = 0;
+        let updateInterval;
+        
+        // Inicializar la API de YouTube
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('youtubePlayer', {
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+        
+        function onPlayerReady(event) {
+            console.log('Player listo');
+            updateDuration();
+        }
+        
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.PLAYING) {
+                isPlaying = true;
+                updatePlayButton();
+                startProgressUpdate();
+            } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+                isPlaying = false;
+                updatePlayButton();
+                stopProgressUpdate();
+            }
+            
+            if (event.data === YT.PlayerState.ENDED) {
+                resetPlayer();
+            }
+        }
+        
+        // Extraer ID de video de YouTube
+        function extractVideoId(url) {
+            const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[7].length === 11) ? match[7] : null;
+        }
+        
+        // Cargar video de YouTube
+        function loadYouTubeVideo() {
+            const urlInput = document.getElementById('youtubeUrl');
+            const url = urlInput.value.trim();
+            
+            if (!url) {
+                alert('Por favor, ingresa una URL de YouTube');
+                return;
+            }
+            
+            const videoId = extractVideoId(url);
+            
+            if (!videoId) {
+                alert('URL de YouTube no válida');
+                return;
+            }
+            
+            // Si el player ya existe, cargar nuevo video
+            if (player && player.loadVideoById) {
+                player.loadVideoById(videoId);
+                resetPlayer();
+            } else {
+                // Si no existe, crear uno nuevo
+                player = new YT.Player('youtubePlayer', {
+                    videoId: videoId,
+                    events: {
+                        'onReady': onPlayerReady,
+                        'onStateChange': onPlayerStateChange
+                    }
+                });
+            }
+            
+            urlInput.value = '';
+        }
+        
+        // Controlar reproducción/pausa
+        function togglePlay() {
+            if (!player || !player.getDuration) {
+                alert('Primero carga un video de YouTube');
+                return;
+            }
+            
+            if (isPlaying) {
+                player.pauseVideo();
+            } else {
+                player.playVideo();
+            }
+        }
+        
+        // Actualizar botón de reproducción
+        function updatePlayButton() {
+            const playIcon = document.getElementById('playIcon');
+            if (isPlaying) {
+                playIcon.className = 'pause-icon';
+            } else {
+                playIcon.className = 'play-icon';
+            }
+        }
+        
+        // Actualizar duración
+        function updateDuration() {
+            if (player && player.getDuration) {
+                duration = player.getDuration();
+                document.getElementById('duration').textContent = formatTime(duration);
+            }
+        }
+        
+        // Formatear tiempo (segundos a MM:SS)
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        // Actualizar progreso
+        function updateProgress() {
+            if (player && player.getCurrentTime) {
+                currentTime = player.getCurrentTime();
+                const progress = (currentTime / duration) * 100;
+                
+                document.getElementById('progressBar').style.width = `${progress}%`;
+                document.getElementById('currentTime').textContent = formatTime(currentTime);
+            }
+        }
+        
+        // Iniciar actualización de progreso
+        function startProgressUpdate() {
+            clearInterval(updateInterval);
+            updateInterval = setInterval(updateProgress, 1000);
+        }
+        
+        // Detener actualización de progreso
+        function stopProgressUpdate() {
+            clearInterval(updateInterval);
+        }
+        
+        // Resetear player
+        function resetPlayer() {
+            isPlaying = false;
+            updatePlayButton();
+            stopProgressUpdate();
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('currentTime').textContent = '0:00';
+        }
+        
+        // Saltar a posición específica en la barra de progreso
+        function seekToPosition(event) {
+            if (!player || !duration) return;
+            
+            const progressContainer = document.getElementById('progressContainer');
+            const rect = progressContainer.getBoundingClientRect();
+            const clickPosition = (event.clientX - rect.left) / rect.width;
+            const seekTime = duration * clickPosition;
+            
+            player.seekTo(seekTime, true);
+            updateProgress();
+        }
+        
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Botón de reproducción
+            document.getElementById('playButton').addEventListener('click', togglePlay);
+            
+            // Barra de progreso
+            document.getElementById('progressContainer').addEventListener('click', seekToPosition);
+            
+            // Botón de cargar
+            document.getElementById('loadButton').addEventListener('click', loadYouTubeVideo);
+            
+            // Input de URL (Enter para cargar)
+            document.getElementById('youtubeUrl').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    loadYouTubeVideo();
+                }
+            });
+            
+            // Ejemplo de URL pre-cargada (opcional)
+            document.getElementById('youtubeUrl').value = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+        });
+    </script>
 </body>
 </html>
