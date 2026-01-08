@@ -3,69 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reproductor Minimalista YouTube</title>
+    <title>Reproductor Minimalista MP3</title>
     <style>
+        /* Reset y configuración básica */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
         
-        /* Fondo sutil para hacer visible el reproductor */
+        /* Fondo completamente transparente */
         body {
-            background: rgba(0, 0, 0, 0.1);
+            background: transparent;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            font-family: Arial, sans-serif;
         }
         
-        .player-container {
-            position: relative;
-            width: 100%;
-            max-width: 500px;
-            padding: 20px;
-        }
-        
-        .player {
-            background: transparent;
-            border-radius: 10px;
-            padding: 20px;
-            position: relative;
-        }
-        
-        .play-button {
-            width: 60px;
-            height: 60px;
-            background: transparent;
-            border: 2px solid white;
-            border-radius: 50%;
+        /* Contenedor del reproductor */
+        .reproductor {
+            width: 300px;
+            height: 100px;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        /* Botón de reproducción */
+        .boton-play {
+            width: 40px;
+            height: 40px;
+            background: transparent;
+            border: none;
             cursor: pointer;
-            margin: 0 auto 20px;
-            transition: all 0.3s ease;
+            padding: 0;
+            position: relative;
         }
         
-        .play-button:hover {
-            transform: scale(1.05);
-            border-color: rgba(255, 255, 255, 0.8);
-        }
-        
+        /* Flecha de reproducción blanca */
         .play-icon {
             width: 0;
             height: 0;
-            border-top: 12px solid transparent;
-            border-bottom: 12px solid transparent;
-            border-left: 20px solid white;
-            margin-left: 4px;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-left: 16px solid white;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-40%, -50%);
         }
         
+        /* Icono de pausa */
         .pause-icon {
-            width: 20px;
-            height: 24px;
+            width: 16px;
+            height: 20px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             display: flex;
             justify-content: space-between;
         }
@@ -73,21 +71,21 @@
         .pause-icon::before,
         .pause-icon::after {
             content: '';
-            width: 6px;
+            width: 5px;
             height: 100%;
             background: white;
         }
         
-        .progress-container {
-            position: relative;
+        /* Línea de duración */
+        .barra-progreso {
             width: 100%;
             height: 2px;
             background: rgba(255, 255, 255, 0.3);
             cursor: pointer;
-            margin: 20px 0;
+            position: relative;
         }
         
-        .progress-bar {
+        .progreso {
             position: absolute;
             height: 100%;
             background: white;
@@ -95,346 +93,107 @@
             transition: width 0.1s linear;
         }
         
-        .time-display {
-            color: white;
-            font-size: 12px;
-            text-align: center;
-            margin-top: 10px;
-            opacity: 0.8;
-            letter-spacing: 1px;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        /* Audio oculto */
+        #audioPlayer {
+            display: none;
         }
         
-        .input-container {
-            margin-top: 20px;
-            display: flex;
-            gap: 10px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        
-        .input-container:hover {
-            opacity: 1;
-        }
-        
-        #youtubeUrl {
-            flex: 1;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 5px;
-            color: white;
-            font-size: 14px;
-            backdrop-filter: blur(5px);
-        }
-        
-        #loadButton {
-            padding: 10px 20px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 5px;
-            color: white;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(5px);
-        }
-        
-        #loadButton:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-        
-        /* Ocultar el iframe de YouTube */
-        #youtubePlayer {
-            position: absolute;
-            width: 0;
-            height: 0;
-            opacity: 0;
-            pointer-events: none;
-        }
-        
-        /* Instrucciones */
-        .instructions {
-            color: white;
-            text-align: center;
-            margin-bottom: 20px;
-            font-size: 14px;
-            opacity: 0.7;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        /* Para que sea visible en páginas con fondo blanco, añade sombra */
+        .boton-play,
+        .barra-progreso {
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
         }
     </style>
 </head>
 <body>
-    <div class="player-container">
-        <div class="player">
-            <!-- Instrucciones -->
-            <div class="instructions">
-                Pega URL de YouTube y haz clic en Cargar
-            </div>
-            
-            <!-- Botón de reproducción -->
-            <div class="play-button" id="playButton">
-                <div class="play-icon" id="playIcon"></div>
-            </div>
-            
-            <!-- Barra de progreso -->
-            <div class="progress-container" id="progressContainer">
-                <div class="progress-bar" id="progressBar"></div>
-            </div>
-            
-            <!-- Tiempo -->
-            <div class="time-display">
-                <span id="currentTime">0:00</span> / <span id="duration">0:00</span>
-            </div>
-            
-            <!-- Input para URL de YouTube -->
-            <div class="input-container">
-                <input type="text" id="youtubeUrl" placeholder="Pega URL de YouTube">
-                <button id="loadButton">Cargar</button>
-            </div>
-            
-            <!-- Player de YouTube (oculto) -->
-            <div id="youtubePlayer"></div>
+    <div class="reproductor">
+        <!-- Botón de reproducción -->
+        <button class="boton-play" id="playBtn">
+            <div class="play-icon" id="playIcon"></div>
+        </button>
+        
+        <!-- Línea de duración -->
+        <div class="barra-progreso" id="progressBar">
+            <div class="progreso" id="progress"></div>
         </div>
+        
+        <!-- Reproductor de audio oculto -->
+        <audio id="audioPlayer" preload="metadata"></audio>
     </div>
 
-    <!-- Cargar API de YouTube -->
     <script>
-        // Cargar la API de YouTube
-        var tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        var firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        // Elementos del DOM
+        const audioPlayer = document.getElementById('audioPlayer');
+        const playBtn = document.getElementById('playBtn');
+        const playIcon = document.getElementById('playIcon');
+        const progressBar = document.getElementById('progressBar');
+        const progress = document.getElementById('progress');
         
-        // Variables globales
-        let player;
+        // Estado del reproductor
         let isPlaying = false;
-        let currentTime = 0;
-        let duration = 0;
-        let updateInterval;
         
-        // Inicializar la API de YouTube
-        function onYouTubeIframeAPIReady() {
-            console.log('YouTube API lista');
-            // No inicializamos el player hasta que se cargue un video
-        }
+        // Cargar canción (aquí puedes cambiar la URL)
+        const canciones = [
+            'https://assets.codepen.io/4358584/Anitek_-_Komorebi.mp3',
+            'https://assets.codepen.io/4358584/Asher_Fulero_-_Game_Show.mp3'
+        ];
         
-        function onPlayerReady(event) {
-            console.log('Player listo');
-            updateDuration();
-            // Auto-reproducir (opcional, descomenta si quieres)
-            // player.playVideo();
-        }
-        
-        function onPlayerStateChange(event) {
-            console.log('Estado cambiado:', event.data);
-            
-            if (event.data === YT.PlayerState.PLAYING) {
-                isPlaying = true;
-                updatePlayButton();
-                startProgressUpdate();
-            } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
-                isPlaying = false;
-                updatePlayButton();
-                stopProgressUpdate();
-            }
-            
-            if (event.data === YT.PlayerState.ENDED) {
-                resetPlayer();
-            }
-        }
-        
-        // Extraer ID de video de YouTube
-        function extractVideoId(url) {
-            // Manejar diferentes formatos de URL
-            const patterns = [
-                /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i,
-                /youtube\.com\/watch\?v=([^&]+)/i,
-                /youtu\.be\/([^?]+)/i,
-                /youtube\.com\/embed\/([^\/]+)/i
-            ];
-            
-            for (const pattern of patterns) {
-                const match = url.match(pattern);
-                if (match && match[1]) {
-                    return match[1];
-                }
-            }
-            
-            return null;
-        }
-        
-        // Cargar video de YouTube
-        function loadYouTubeVideo() {
-            const urlInput = document.getElementById('youtubeUrl');
-            const url = urlInput.value.trim();
-            
-            if (!url) {
-                alert('Por favor, ingresa una URL de YouTube');
-                return;
-            }
-            
-            const videoId = extractVideoId(url);
-            
-            if (!videoId) {
-                alert('URL de YouTube no válida. Ejemplos válidos:\n\n• https://www.youtube.com/watch?v=dQw4w9WgXcQ\n• https://youtu.be/dQw4w9WgXcQ\n• https://youtube.com/embed/dQw4w9WgXcQ');
-                return;
-            }
-            
-            // Si el player ya existe, cargar nuevo video
-            if (player && player.loadVideoById) {
-                player.loadVideoById(videoId);
-                resetPlayer();
-                setTimeout(updateDuration, 1000);
-            } else {
-                // Si no existe, crear uno nuevo
-                player = new YT.Player('youtubePlayer', {
-                    videoId: videoId,
-                    playerVars: {
-                        autoplay: 0,
-                        controls: 0,
-                        disablekb: 1,
-                        fs: 0,
-                        iv_load_policy: 3,
-                        modestbranding: 1,
-                        rel: 0,
-                        showinfo: 0
-                    },
-                    events: {
-                        'onReady': onPlayerReady,
-                        'onStateChange': onPlayerStateChange
-                    }
-                });
-            }
-            
-            // Mostrar que se cargó el video
-            document.querySelector('.instructions').textContent = 'Video cargado. Haz clic en el botón para reproducir.';
-            urlInput.value = '';
-        }
+        // Cargar la primera canción por defecto
+        audioPlayer.src = canciones[0];
         
         // Controlar reproducción/pausa
-        function togglePlay() {
-            if (!player || !player.getDuration || player.getDuration() === 0) {
-                alert('Primero carga un video de YouTube');
-                return;
-            }
-            
-            if (isPlaying) {
-                player.pauseVideo();
+        playBtn.addEventListener('click', () => {
+            if (!isPlaying) {
+                audioPlayer.play();
             } else {
-                player.playVideo();
+                audioPlayer.pause();
             }
-        }
-        
-        // Actualizar botón de reproducción
-        function updatePlayButton() {
-            const playIcon = document.getElementById('playIcon');
-            if (isPlaying) {
-                playIcon.className = 'pause-icon';
-            } else {
-                playIcon.className = 'play-icon';
-            }
-        }
-        
-        // Actualizar duración
-        function updateDuration() {
-            if (player && player.getDuration && player.getDuration() > 0) {
-                duration = player.getDuration();
-                document.getElementById('duration').textContent = formatTime(duration);
-            } else {
-                // Reintentar después de un tiempo
-                setTimeout(updateDuration, 500);
-            }
-        }
-        
-        // Formatear tiempo (segundos a MM:SS)
-        function formatTime(seconds) {
-            const mins = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
-            return `${mins}:${secs.toString().padStart(2, '0')}`;
-        }
-        
-        // Actualizar progreso
-        function updateProgress() {
-            if (player && player.getCurrentTime && duration > 0) {
-                try {
-                    currentTime = player.getCurrentTime();
-                    const progress = (currentTime / duration) * 100;
-                    
-                    document.getElementById('progressBar').style.width = `${progress}%`;
-                    document.getElementById('currentTime').textContent = formatTime(currentTime);
-                } catch (e) {
-                    console.log('Error actualizando progreso:', e);
-                }
-            }
-        }
-        
-        // Iniciar actualización de progreso
-        function startProgressUpdate() {
-            clearInterval(updateInterval);
-            updateInterval = setInterval(updateProgress, 100);
-        }
-        
-        // Detener actualización de progreso
-        function stopProgressUpdate() {
-            clearInterval(updateInterval);
-        }
-        
-        // Resetear player
-        function resetPlayer() {
-            isPlaying = false;
-            updatePlayButton();
-            stopProgressUpdate();
-            document.getElementById('progressBar').style.width = '0%';
-            document.getElementById('currentTime').textContent = '0:00';
-        }
-        
-        // Saltar a posición específica en la barra de progreso
-        function seekToPosition(event) {
-            if (!player || !duration || duration === 0) return;
-            
-            const progressContainer = document.getElementById('progressContainer');
-            const rect = progressContainer.getBoundingClientRect();
-            const clickPosition = (event.clientX - rect.left) / rect.width;
-            const seekTime = duration * clickPosition;
-            
-            player.seekTo(seekTime, true);
-            updateProgress();
-        }
-        
-        // Event Listeners
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM cargado');
-            
-            // Botón de reproducción
-            document.getElementById('playButton').addEventListener('click', togglePlay);
-            
-            // Barra de progreso
-            document.getElementById('progressContainer').addEventListener('click', seekToPosition);
-            
-            // Botón de cargar
-            document.getElementById('loadButton').addEventListener('click', loadYouTubeVideo);
-            
-            // Input de URL (Enter para cargar)
-            document.getElementById('youtubeUrl').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    loadYouTubeVideo();
-                }
-            });
-            
-            // Ejemplo de URL pre-cargada
-            document.getElementById('youtubeUrl').value = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
-            
-            // Hacer el input visible temporalmente al cargar
-            document.querySelector('.input-container').style.opacity = '1';
-            setTimeout(() => {
-                document.querySelector('.input-container').style.opacity = '0.7';
-            }, 3000);
         });
         
-        // Manejar errores de la API
-        window.addEventListener('error', function(e) {
-            console.error('Error global:', e.error);
+        // Actualizar icono de reproducción
+        audioPlayer.addEventListener('play', () => {
+            isPlaying = true;
+            playIcon.className = 'pause-icon';
+        });
+        
+        audioPlayer.addEventListener('pause', () => {
+            isPlaying = false;
+            playIcon.className = 'play-icon';
+        });
+        
+        // Actualizar barra de progreso
+        audioPlayer.addEventListener('timeupdate', () => {
+            if (audioPlayer.duration) {
+                const porcentaje = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+                progress.style.width = `${porcentaje}%`;
+            }
+        });
+        
+        // Saltar a posición al hacer clic en la barra
+        progressBar.addEventListener('click', (e) => {
+            const rect = progressBar.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const width = rect.width;
+            const porcentaje = (clickX / width);
+            
+            if (audioPlayer.duration) {
+                audioPlayer.currentTime = audioPlayer.duration * porcentaje;
+            }
+        });
+        
+        // Cuando se cargan los metadatos
+        audioPlayer.addEventListener('loadedmetadata', () => {
+            console.log('Duración de la canción:', audioPlayer.duration);
+        });
+        
+        // Manejar errores
+        audioPlayer.addEventListener('error', (e) => {
+            console.error('Error cargando el audio:', e);
+            // Si la primera canción falla, intenta con la segunda
+            if (audioPlayer.src === canciones[0]) {
+                audioPlayer.src = canciones[1];
+                audioPlayer.load();
+            }
         });
     </script>
 </body>
