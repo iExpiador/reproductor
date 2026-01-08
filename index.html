@@ -11,14 +11,14 @@
             box-sizing: border-box;
         }
         
+        /* Fondo sutil para hacer visible el reproductor */
         body {
-            background: transparent;
+            background: rgba(0, 0, 0, 0.1);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             font-family: Arial, sans-serif;
-            background-color: #1a1a1a; /* Solo para visualización */
         }
         
         .player-container {
@@ -51,6 +51,7 @@
         
         .play-button:hover {
             transform: scale(1.05);
+            border-color: rgba(255, 255, 255, 0.8);
         }
         
         .play-icon {
@@ -101,37 +102,46 @@
             margin-top: 10px;
             opacity: 0.8;
             letter-spacing: 1px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
         }
         
         .input-container {
             margin-top: 20px;
             display: flex;
             gap: 10px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .input-container:hover {
+            opacity: 1;
         }
         
         #youtubeUrl {
             flex: 1;
             padding: 10px;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.5);
             border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 5px;
             color: white;
             font-size: 14px;
+            backdrop-filter: blur(5px);
         }
         
         #loadButton {
             padding: 10px 20px;
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.5);
             border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 5px;
             color: white;
             cursor: pointer;
             font-size: 14px;
             transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
         }
         
         #loadButton:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.2);
         }
         
         /* Ocultar el iframe de YouTube */
@@ -142,11 +152,26 @@
             opacity: 0;
             pointer-events: none;
         }
+        
+        /* Instrucciones */
+        .instructions {
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 14px;
+            opacity: 0.7;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
     </style>
 </head>
 <body>
     <div class="player-container">
         <div class="player">
+            <!-- Instrucciones -->
+            <div class="instructions">
+                Pega URL de YouTube y haz clic en Cargar
+            </div>
+            
             <!-- Botón de reproducción -->
             <div class="play-button" id="playButton">
                 <div class="play-icon" id="playIcon"></div>
@@ -164,7 +189,7 @@
             
             <!-- Input para URL de YouTube -->
             <div class="input-container">
-                <input type="text" id="youtubeUrl" placeholder="Pega la URL de YouTube aquí">
+                <input type="text" id="youtubeUrl" placeholder="Pega URL de YouTube">
                 <button id="loadButton">Cargar</button>
             </div>
             
@@ -173,8 +198,14 @@
         </div>
     </div>
 
-    <script src="https://www.youtube.com/iframe_api"></script>
+    <!-- Cargar API de YouTube -->
     <script>
+        // Cargar la API de YouTube
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        
         // Variables globales
         let player;
         let isPlaying = false;
@@ -184,20 +215,20 @@
         
         // Inicializar la API de YouTube
         function onYouTubeIframeAPIReady() {
-            player = new YT.Player('youtubePlayer', {
-                events: {
-                    'onReady': onPlayerReady,
-                    'onStateChange': onPlayerStateChange
-                }
-            });
+            console.log('YouTube API lista');
+            // No inicializamos el player hasta que se cargue un video
         }
         
         function onPlayerReady(event) {
             console.log('Player listo');
             updateDuration();
+            // Auto-reproducir (opcional, descomenta si quieres)
+            // player.playVideo();
         }
         
         function onPlayerStateChange(event) {
+            console.log('Estado cambiado:', event.data);
+            
             if (event.data === YT.PlayerState.PLAYING) {
                 isPlaying = true;
                 updatePlayButton();
@@ -215,9 +246,22 @@
         
         // Extraer ID de video de YouTube
         function extractVideoId(url) {
-            const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-            const match = url.match(regExp);
-            return (match && match[7].length === 11) ? match[7] : null;
+            // Manejar diferentes formatos de URL
+            const patterns = [
+                /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i,
+                /youtube\.com\/watch\?v=([^&]+)/i,
+                /youtu\.be\/([^?]+)/i,
+                /youtube\.com\/embed\/([^\/]+)/i
+            ];
+            
+            for (const pattern of patterns) {
+                const match = url.match(pattern);
+                if (match && match[1]) {
+                    return match[1];
+                }
+            }
+            
+            return null;
         }
         
         // Cargar video de YouTube
@@ -233,7 +277,7 @@
             const videoId = extractVideoId(url);
             
             if (!videoId) {
-                alert('URL de YouTube no válida');
+                alert('URL de YouTube no válida. Ejemplos válidos:\n\n• https://www.youtube.com/watch?v=dQw4w9WgXcQ\n• https://youtu.be/dQw4w9WgXcQ\n• https://youtube.com/embed/dQw4w9WgXcQ');
                 return;
             }
             
@@ -241,10 +285,21 @@
             if (player && player.loadVideoById) {
                 player.loadVideoById(videoId);
                 resetPlayer();
+                setTimeout(updateDuration, 1000);
             } else {
                 // Si no existe, crear uno nuevo
                 player = new YT.Player('youtubePlayer', {
                     videoId: videoId,
+                    playerVars: {
+                        autoplay: 0,
+                        controls: 0,
+                        disablekb: 1,
+                        fs: 0,
+                        iv_load_policy: 3,
+                        modestbranding: 1,
+                        rel: 0,
+                        showinfo: 0
+                    },
                     events: {
                         'onReady': onPlayerReady,
                         'onStateChange': onPlayerStateChange
@@ -252,12 +307,14 @@
                 });
             }
             
+            // Mostrar que se cargó el video
+            document.querySelector('.instructions').textContent = 'Video cargado. Haz clic en el botón para reproducir.';
             urlInput.value = '';
         }
         
         // Controlar reproducción/pausa
         function togglePlay() {
-            if (!player || !player.getDuration) {
+            if (!player || !player.getDuration || player.getDuration() === 0) {
                 alert('Primero carga un video de YouTube');
                 return;
             }
@@ -281,9 +338,12 @@
         
         // Actualizar duración
         function updateDuration() {
-            if (player && player.getDuration) {
+            if (player && player.getDuration && player.getDuration() > 0) {
                 duration = player.getDuration();
                 document.getElementById('duration').textContent = formatTime(duration);
+            } else {
+                // Reintentar después de un tiempo
+                setTimeout(updateDuration, 500);
             }
         }
         
@@ -296,19 +356,23 @@
         
         // Actualizar progreso
         function updateProgress() {
-            if (player && player.getCurrentTime) {
-                currentTime = player.getCurrentTime();
-                const progress = (currentTime / duration) * 100;
-                
-                document.getElementById('progressBar').style.width = `${progress}%`;
-                document.getElementById('currentTime').textContent = formatTime(currentTime);
+            if (player && player.getCurrentTime && duration > 0) {
+                try {
+                    currentTime = player.getCurrentTime();
+                    const progress = (currentTime / duration) * 100;
+                    
+                    document.getElementById('progressBar').style.width = `${progress}%`;
+                    document.getElementById('currentTime').textContent = formatTime(currentTime);
+                } catch (e) {
+                    console.log('Error actualizando progreso:', e);
+                }
             }
         }
         
         // Iniciar actualización de progreso
         function startProgressUpdate() {
             clearInterval(updateInterval);
-            updateInterval = setInterval(updateProgress, 1000);
+            updateInterval = setInterval(updateProgress, 100);
         }
         
         // Detener actualización de progreso
@@ -327,7 +391,7 @@
         
         // Saltar a posición específica en la barra de progreso
         function seekToPosition(event) {
-            if (!player || !duration) return;
+            if (!player || !duration || duration === 0) return;
             
             const progressContainer = document.getElementById('progressContainer');
             const rect = progressContainer.getBoundingClientRect();
@@ -340,6 +404,8 @@
         
         // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM cargado');
+            
             // Botón de reproducción
             document.getElementById('playButton').addEventListener('click', togglePlay);
             
@@ -356,8 +422,19 @@
                 }
             });
             
-            // Ejemplo de URL pre-cargada (opcional)
+            // Ejemplo de URL pre-cargada
             document.getElementById('youtubeUrl').value = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+            
+            // Hacer el input visible temporalmente al cargar
+            document.querySelector('.input-container').style.opacity = '1';
+            setTimeout(() => {
+                document.querySelector('.input-container').style.opacity = '0.7';
+            }, 3000);
+        });
+        
+        // Manejar errores de la API
+        window.addEventListener('error', function(e) {
+            console.error('Error global:', e.error);
         });
     </script>
 </body>
